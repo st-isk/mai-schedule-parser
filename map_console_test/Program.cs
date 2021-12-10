@@ -13,12 +13,20 @@ namespace map_console_test
     {
         static void Main(string[] args)
         {
-            using (var db = new LiteDatabase(@"test1.db"))
+            DateTime time = DateTime.Parse("10:25");
+            using (var db = new LiteDatabase(@"MAI.db"))
             {
-                var col = db.GetCollection<Classroom>();
-                Parser.Get_info(col);
-            }
+                var col = db.GetCollection<SchedulePos>("Schedule");
+                //Parser.Get_info(col);
 
+                var result = col.Find(x => time > DateTime.Parse(x.Time_start) && time < DateTime.Parse(x.Time_finish));
+                foreach (var item in result)
+                {
+                    Console.WriteLine(item.Group);
+                    Console.WriteLine(item.Subject);
+                }
+            }
+            
         }
 
     }

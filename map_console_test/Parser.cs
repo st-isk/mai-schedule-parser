@@ -32,7 +32,7 @@ namespace map_console_test
             return page;
         }
 
-        public static void Get_info(ILiteCollection<Classroom> col)
+        public static void Get_info(ILiteCollection<SchedulePos> col)
         {
             Random rndm = new Random();
             var all_gr_str = Parser.Download("https://mai.ru/education/schedule/");
@@ -44,31 +44,25 @@ namespace map_console_test
                     group_str = Regex.Matches(group_str, Parser.pattern_day, RegexOptions.Singleline)[0].Value; //обрезаем полученную строку (удаляем все данные, не относящиеся к текущему дню)
                     Console.WriteLine(m.Groups[1].Value);
 
-                    MatchCollection matches = Regex.Matches(group_str, Parser.pattern_time, RegexOptions.Singleline); //находим на странице совпадения по паттерну времени
-                    int mtch_cnt = matches.Count;
-                    var gr_db_test = new Classroom(mtch_cnt); //экземпляр класса, в который кидаем данные о парах текущей группы 
+                    MatchCollection matches_time = Regex.Matches(group_str, Parser.pattern_time, RegexOptions.Singleline); //находим на странице совпадения по паттерну времени
+                    MatchCollection matches_class = Regex.Matches(group_str, Parser.pattern_class, RegexOptions.Singleline); //находим на странице совпадения по паттерну локации
+                    MatchCollection matches_subj = Regex.Matches(group_str, Parser.pattern_subj, RegexOptions.Singleline); //находим на странице совпадения по паттерну названия предмета
+                    int mtch_cnt = matches_time.Count;
+                    
                     for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о времени
                     {
-                        Console.WriteLine(matches[i].Groups[1].Value + "-" + matches[i].Groups[2].Value);
-                        gr_db_test.Time_start[i] = matches[i].Groups[1].Value;
-                        gr_db_test.Time_finish[i] = matches[i].Groups[2].Value;
+                        var pos = new SchedulePos(); //экземпляр класса, в который кидаем данные о парах текущей группы 
+                        Console.WriteLine(matches_time[i].Groups[1].Value + "-" + matches_time[i].Groups[2].Value);
+                        Console.WriteLine(matches_class[i].Groups[1].Value.Trim());
+                        Console.WriteLine(matches_subj[i].Groups[1].Value);
+                        pos.Time_start = matches_time[i].Groups[1].Value;
+                        pos.Time_finish = matches_time[i].Groups[2].Value;
+                        pos.Location = matches_class[i].Groups[1].Value.Trim();
+                        pos.Subject = matches_subj[i].Groups[1].Value;
+                        pos.Group = m.Groups[1].Value;
+                        if (pos.Group == "") continue;
+                        col.Insert(pos); //Добавляем данные в коллекцию (информацию из экземпляра класса в БД)
                     }
-
-                    matches = Regex.Matches(group_str, Parser.pattern_class, RegexOptions.Singleline); //находим на странице совпадения по паттерну локации
-                    for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о локации
-                    {
-                        Console.WriteLine(matches[i].Groups[1].Value.Trim());
-                        gr_db_test.Location[i] = matches[i].Groups[1].Value.Trim();
-                    }
-
-                    matches = Regex.Matches(group_str, Parser.pattern_subj, RegexOptions.Singleline); //находим на странице совпадения по паттерну названия предмета
-                    for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о названии предмета
-                    {
-                        Console.WriteLine(matches[i].Groups[1].Value);
-                        gr_db_test.Subject[i] = matches[i].Groups[1].Value;
-                    }
-
-                    col.Insert(gr_db_test); //Добавляем данные в коллекцию (информацию из экземпляра класса в БД)
 
                     Console.WriteLine("---");
                     Thread.Sleep(rndm.Next(450, 700));
