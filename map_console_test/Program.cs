@@ -24,6 +24,7 @@ namespace map_console_test
                 {
                     Console.WriteLine(item.Group);
                     Console.WriteLine(item.Subject);
+                    Console.WriteLine(item.Location);
                 }
             }
             
