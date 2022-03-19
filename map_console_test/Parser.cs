@@ -12,30 +12,30 @@ namespace map_console_test
 {
     public static class Parser
     {
-        public const string pattern_inst = "<option value=\"Институт №(\\d{1,2})\" >";
-        public const string pattern_std_year = "<option value=\"(\\d)\" >";
-        //public const string pattern_gr = @"href=""detail\.php\?group=(.{3,5}-.{3,7}-\d{2})";
-        public const string pattern_gr = "href=\"index.php?group=(.{3,5}-.{3,7}-\\d{2})\"";
-        public const string pattern_day = "<div class=\"sc-table-col sc-day-header sc-blue.*?<div class=\"sc-table-col sc-day-header sc-gray";
-        public const string pattern_time = "<div class=\"sc-table-col sc-item-time\">(\\d{2}:\\d{2}) &ndash; (\\d{2}:\\d{2})</div>";
-        public const string pattern_class = "<span class=\"glyphicon glyphicon-map-marker\">&nbsp;</span>(.*?)</div>";
-        public const string pattern_subj = "<span class=\"sc-title\">(.*?)</span>";
+        private const string pattern_inst = "<option value=\"Институт №(\\d{1,2})\" >";
+        private const string pattern_std_year = "<option value=\"(\\d)\" >";
+        //private const string pattern_gr = @"href=""detail\.php\?group=(.{3,5}-.{3,7}-\d{2})";
+        private const string pattern_gr = "href=\"index.php?group=(.{3,5}-.{3,7}-\\d{2})\"";
+        private const string pattern_day = "<div class=\"sc-table-col sc-day-header sc-blue.*?<div class=\"sc-table-col sc-day-header sc-gray";
+        private const string pattern_time = "<div class=\"sc-table-col sc-item-time\">(\\d{2}:\\d{2}) &ndash; (\\d{2}:\\d{2})</div>";
+        private const string pattern_class = "<span class=\"glyphicon glyphicon-map-marker\">&nbsp;</span>(.*?)</div>";
+        private const string pattern_subj = "<span class=\"sc-title\">(.*?)</span>";
 
-        public static string Download(string link)
+        public static string Download_old(string link)
         {
             string page;
 
             using (var client = new WebClient())
             {
                 client.Encoding = Encoding.UTF8;
-                page = client.DownloadString(link);
-                client.DownloadFile(link, "pisos.txt");
+                page = client.DownloadString(link); 
+                //client.DownloadFile(link, "pisos.txt");
             }
 
             return page;
         }
 
-        public static void Get_test_info()
+        /*public static void Get_test_info()
         {
             var all_groups = Parser.Download("https://mai.ru/education/studies/schedule/groups.php");
             foreach (Match m in Regex.Matches(all_groups, Parser.pattern_inst, RegexOptions.Singleline))
@@ -46,27 +46,33 @@ namespace map_console_test
             {
                 Console.WriteLine(m.Groups[1].Value);
             }
-        }
+        }*/
 
-        public static void Get_info(ILiteCollection<SchedulePos> col)
+        private static async void Get_groups()
         {
-            Random rndm = new Random();
-            var main_shdl_page = Parser.Download("https://mai.ru/education/studies/schedule/groups.php");
+            var main_shdl_page = await new WebClient().DownloadStringTaskAsync("https://mai.ru/education/studies/schedule/groups.php");
             var inst_collection = Regex.Matches(main_shdl_page, Parser.pattern_inst, RegexOptions.Singleline);
             var year_collection = Regex.Matches(main_shdl_page, Parser.pattern_std_year, RegexOptions.Singleline);
             foreach (Match m_inst in inst_collection)
             {
                 foreach (Match m_year in year_collection)
                 {
-                    var inst_year_page = Parser.Download("https://mai.ru/education/studies/schedule/groups.php?department=Институт+№" + m_inst + "&course=" + m_year);
+                    var inst_year_page = await new WebClient().DownloadStringTaskAsync("https://mai.ru/education/studies/schedule/groups.php?department=Институт+№" + m_inst + "&course=" + m_year);
                     var gr_collection = Regex.Matches(inst_year_page, Parser.pattern_gr, RegexOptions.Singleline);
                     foreach (Match m_gr in gr_collection)
                     {
                         //Мб сделать список и бахать туда все группы, но чет такой себе варик, скорее просто записывать все это дело в файл
+                        //запись в файл сделать асинхронной
                     }
                 }
             }
-            /*foreach (Match m in Regex.Matches(all_gr_str, Parser.pattern_gr, RegexOptions.Multiline)) //бежим по всем совпадениям по паттерну групп (иначе говоря, берем название каждой группы и далее вставляем в ссылку для скачивания)
+        }
+
+        public static void Get_info(ILiteCollection<SchedulePos> col)
+        {
+            Random rndm = new Random();
+            
+            foreach (Match m in Regex.Matches(all_gr_str, Parser.pattern_gr, RegexOptions.Multiline)) //бежим по всем совпадениям по паттерну групп (иначе говоря, берем название каждой группы и далее вставляем в ссылку для скачивания)
             {
                 try
                 {
@@ -103,7 +109,7 @@ namespace map_console_test
                     Console.WriteLine(ex.Message);
                     //continue;
                 }
-            }*/
+            }
         }
     }
 }
