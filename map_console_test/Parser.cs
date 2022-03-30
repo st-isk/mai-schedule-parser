@@ -19,12 +19,14 @@ namespace map_console_test
         private const string pattern_gr = "href=\"index\\.php\\?group=(.{3,5}-.{3,7}-\\d{2})\"";
         //private const string pattern_day = "<div class=\"sc-table-col sc-day-header sc-blue.*?<div class=\"sc-table-col sc-day-header sc-gray"; //для старой верстки сайта
         private const string pattern_day = "step-icon me-0 me-sm-3 step-icon-soft-primary.*?step-icon me-0 me-sm-3 step-icon-soft-dark";
-        //private const string pattern_time = "<div class=\"sc-table-col sc-item-time\">(\\d{2}:\\d{2}) &ndash; (\\d{2}:\\d{2})</div>";
+        //private const string pattern_time = "<div class=\"sc-table-col sc-item-time\">(\\d{2}:\\d{2}) &ndash; (\\d{2}:\\d{2})</div>"; //для старой верстки сайта
         private const string pattern_time = "<li class=\"list-inline-item\">(\\d{2}:\\d{2}) &ndash; (\\d{2}:\\d{2})</li>";
-        //private const string pattern_class = "<span class=\"glyphicon glyphicon-map-marker\">&nbsp;</span>(.*?)</div>";
+        //private const string pattern_class = "<span class=\"glyphicon glyphicon-map-marker\">&nbsp;</span>(.*?)</div>"; //для старой верстки сайта
         private const string pattern_class = "fad fa-map-marker-alt me-2\"></i>(.*?)</li>";
-        //private const string pattern_subj = "<span class=\"sc-title\">(.*?)</span>";
-        private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span class=\"text-nowrap\">(.*?)<span";
+        //private const string pattern_subj = "<span class=\"sc-title\">(.*?)</span>"; //для старой верстки сайта
+        //private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span class=\"text-nowrap\">(.*?)<span"; //v2.0
+        private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span.+?\"badge bg-soft-secondary"; //v2.1 //<span.+? неправильно работает
+        //ибо пропускаются нужные слова в nowrap, надо доработать паттерн
 
         public static string Download(string link) 
         {
@@ -34,7 +36,7 @@ namespace map_console_test
             {
                 client.Encoding = Encoding.UTF8;
                 page = client.DownloadString(link); 
-                //client.DownloadFile(link, "pisos.txt");
+                client.DownloadFile(link, "pisos.txt");
             }
 
             return page;
@@ -94,10 +96,10 @@ namespace map_console_test
             }
         }
         
-        public static void Get_info(/*ILiteCollection<SchedulePos> col*/)
+        public static void Get_info(/*ILiteCollection<SchedulePos> col,*/ bool get_groups)
         {
             Random rndm = new Random();
-            //Parser.Get_groups();
+            if(get_groups) Parser.Get_groups();
             var sr= new StreamReader("groups_list.txt");
             string group_str;
 
@@ -115,13 +117,18 @@ namespace map_console_test
                     MatchCollection matches_class = Regex.Matches(group_str, Parser.pattern_class, RegexOptions.Singleline); //находим на странице совпадения по паттерну локации
                     MatchCollection matches_subj = Regex.Matches(group_str, Parser.pattern_subj, RegexOptions.Singleline); //находим на странице совпадения по паттерну названия предмета
                     int mtch_cnt = matches_time.Count;
+                    Console.WriteLine(actl_grp);
                     
                     for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о времени
                     {
                         //var pos = new SchedulePos(); //экземпляр класса, в который кидаем данные о парах текущей группы 
                         Console.WriteLine(matches_time[i].Groups[1].Value + "-" + matches_time[i].Groups[2].Value);
                         Console.WriteLine(matches_class[i].Groups[1].Value);
-                        Console.WriteLine(matches_subj[i].Groups[1].Value + matches_subj[i].Groups[2].Value);
+                        if(matches_subj[i].Groups.Count == 2)
+                            Console.WriteLine(matches_subj[i].Groups[1].Value.Trim());
+                        else
+                            Console.WriteLine(matches_subj[i].Groups[1].Value + matches_subj[i].Groups[2].Value);
+                        Console.WriteLine("--end of subj--");
                         //pos.Time_start = matches_time[i].Groups[1].Value;
                         //pos.Time_finish = matches_time[i].Groups[2].Value;
                         //pos.Location = matches_class[i].Groups[1].Value;
@@ -131,7 +138,7 @@ namespace map_console_test
                         //col.Insert(pos); //Добавляем данные в коллекцию (информацию из экземпляра класса в БД)
                     }
 
-                    Console.WriteLine("---");
+                    Console.WriteLine("--end of group--");
                     Thread.Sleep(rndm.Next(450, 700));
                 }
 
