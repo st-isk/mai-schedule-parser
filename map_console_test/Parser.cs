@@ -24,9 +24,8 @@ namespace map_console_test
         //private const string pattern_class = "<span class=\"glyphicon glyphicon-map-marker\">&nbsp;</span>(.*?)</div>"; //для старой верстки сайта
         private const string pattern_class = "fad fa-map-marker-alt me-2\"></i>(.*?)</li>";
         //private const string pattern_subj = "<span class=\"sc-title\">(.*?)</span>"; //для старой верстки сайта
-        //private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span class=\"text-nowrap\">(.*?)<span"; //v2.0
-        private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span.+?\"badge bg-soft-secondary"; //v2.1 //<span.+? неправильно работает
-        //ибо пропускаются нужные слова в nowrap, надо доработать паттерн
+        private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span\\s+?class=\"badge bg-soft-secondary";
+
 
         public static string Download(string link) 
         {
@@ -68,14 +67,14 @@ namespace map_console_test
                             foreach (Match m_gr in gr_collection)
                             {
                                 sw.WriteLine(m_gr.Groups[1].Value); //В файл записываем каждую полученную группу 
-                                Console.WriteLine("записал группу в файл");
+                                //Console.WriteLine("записал группу в файл");
                             }
 
                             Thread.Sleep(rndm.Next(450, 700));
                         }
                         catch (Exception inner_ex)
                         {
-                            Console.WriteLine(inner_ex.Message); 
+                            //Console.WriteLine(inner_ex.Message); 
                             continue; //Хорошо бы устроить здесь нормальный логгер
                             // и предусмотреть возможность моментального автоматического перезапуска парсера в случае выдачи ошибки от сервера,
                             // связанной с количеством и быстротой запросов
@@ -96,11 +95,13 @@ namespace map_console_test
             }
         }
         
-        public static void Get_info(/*ILiteCollection<SchedulePos> col,*/ bool get_groups)
+        public static void Get_info(ILiteCollection<SchedulePos> col, bool get_groups)
         {
             Random rndm = new Random();
             if(get_groups) Parser.Get_groups();
             var sr= new StreamReader("groups_list.txt");
+            var client = new WebClient();
+            client.Encoding = Encoding.UTF8;
             string group_str;
 
             while (!sr.EndOfStream) //бежим по файлу с названиями групп (иначе говоря, берем название каждой группы и далее вставляем в ссылку для скачивания)
@@ -110,7 +111,7 @@ namespace map_console_test
                     string actl_grp = sr.ReadLine();
                     if (actl_grp == "") continue;
 
-                    group_str = Parser.Download("https://mai.ru/education/studies/schedule/index.php?group=" + actl_grp); //скачиваем страницу конкретной группы
+                    group_str = client.DownloadString("https://mai.ru/education/studies/schedule/index.php?group=" + actl_grp); //скачиваем страницу конкретной группы
                     group_str = Regex.Matches(group_str, Parser.pattern_day, RegexOptions.Singleline)[0].Value; //обрезаем полученную строку (удаляем все данные, не относящиеся к текущему дню)
 
                     MatchCollection matches_time = Regex.Matches(group_str, Parser.pattern_time, RegexOptions.Singleline); //находим на странице совпадения по паттерну времени
@@ -121,33 +122,44 @@ namespace map_console_test
                     
                     for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о времени
                     {
-                        //var pos = new SchedulePos(); //экземпляр класса, в который кидаем данные о парах текущей группы 
+                        var pos = new SchedulePos(); //экземпляр класса, в который кидаем данные о парах текущей группы 
+                        pos.Time_start = matches_time[i].Groups[1].Value;
+                        pos.Time_finish = matches_time[i].Groups[2].Value;
                         Console.WriteLine(matches_time[i].Groups[1].Value + "-" + matches_time[i].Groups[2].Value);
+                        pos.Location = matches_class[i].Groups[1].Value;
                         Console.WriteLine(matches_class[i].Groups[1].Value);
-                        if(matches_subj[i].Groups.Count == 2)
-                            Console.WriteLine(matches_subj[i].Groups[1].Value.Trim());
+                        if (matches_subj[i].Groups[1].Value.Contains("<span class=\"text-nowrap\">"))
+                        {
+                            pos.Subject = Regex.Replace(matches_subj[i].Groups[1].Value, "\\s+?<span class=\"text-nowrap\">", " ").Trim();
+                            Console.WriteLine(Regex.Replace(matches_subj[i].Groups[1].Value, "\\s+?<span class=\"text-nowrap\">", " ").Trim());
+                        }
                         else
-                            Console.WriteLine(matches_subj[i].Groups[1].Value + matches_subj[i].Groups[2].Value);
+                        {
+                            pos.Subject = matches_subj[i].Groups[1].Value.Trim();
+                            Console.WriteLine(matches_subj[i].Groups[1].Value.Trim());
+                        }
                         Console.WriteLine("--end of subj--");
-                        //pos.Time_start = matches_time[i].Groups[1].Value;
-                        //pos.Time_finish = matches_time[i].Groups[2].Value;
-                        //pos.Location = matches_class[i].Groups[1].Value;
-                        //pos.Subject = matches_subj[i].Groups[1].Value + matches_subj[i].Groups[2].Value;
-                        //pos.Group = m.Groups[1].Value;
-                        //if (pos.Group == "") continue;
-                        //col.Insert(pos); //Добавляем данные в коллекцию (информацию из экземпляра класса в БД)
+                        pos.Group = actl_grp;
+                        col.Insert(pos); //Добавляем данные в коллекцию (информацию из экземпляра класса в БД)
                     }
 
                     Console.WriteLine("--end of group--");
-                    Thread.Sleep(rndm.Next(450, 700));
+                    Thread.Sleep(rndm.Next(450, 1000));
+                }
+
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Thread.Sleep(700);
                 }
 
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
-                    //continue;
                 }
             }
+            if (client != null) client.Dispose();
+            if (sr != null) sr.Dispose();
         }
     }
 }
