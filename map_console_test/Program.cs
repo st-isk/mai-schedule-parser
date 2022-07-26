@@ -13,21 +13,13 @@ namespace map_console_test
     {
         static void Main(string[] args)
         {
-            DateTime time = DateTime.Parse("10:25");
+            DateTime time = DateTime.Parse("10:25"); //вводим нужное/текущее время
             using (var db = new LiteDatabase(@"MAI.db"))
             {
-                var col = db.GetCollection<SchedulePos>("Schedule");
-                //Parser.Get_info(col);
-
-                var result = col.Find(x => time > DateTime.Parse(x.Time_start) && time < DateTime.Parse(x.Time_finish));
-                foreach (var item in result)
-                {
-                    Console.WriteLine(item.Group);
-                    Console.WriteLine(item.Subject);
-                    Console.WriteLine(item.Location);
-                }
+                //var col = db.GetCollection<SchedulePos>("Schedule");
+              
+                //var result = col.Find(x => time > DateTime.Parse(x.Time_start) && time < DateTime.Parse(x.Time_finish));  
             }
-            
         }
 
     }

@@ -9,7 +9,7 @@ using LiteDB;
 using System.IO;
 using System.Threading;
 
-namespace map_console_test
+namespace Parsing_module
 {
     public static class Parser
     {
@@ -27,14 +27,14 @@ namespace map_console_test
         private const string pattern_subj = "<p class=\"mb-2 fw-semi-bold text-dark\">(.*?)<span\\s+?class=\"badge bg-soft-secondary";
 
 
-        public static string Download(string link) 
+        private static string Download(string link)
         {
             string page;
 
             using (var client = new WebClient())
             {
                 client.Encoding = Encoding.UTF8;
-                page = client.DownloadString(link); 
+                page = client.DownloadString(link);
                 client.DownloadFile(link, "pisos.txt");
             }
 
@@ -103,8 +103,8 @@ namespace map_console_test
         public static void Get_info(ILiteCollection<SchedulePos> col, bool get_groups)
         {
             Random rndm = new Random();
-            if(get_groups) Parser.Get_groups();
-            var sr= new StreamReader("groups_list.txt");
+            if (get_groups) Parser.Get_groups();
+            var sr = new StreamReader("groups_list.txt");
             var client = new WebClient();
             client.Encoding = Encoding.UTF8;
             string group_str;
@@ -124,7 +124,7 @@ namespace map_console_test
                     MatchCollection matches_subj = Regex.Matches(group_str, Parser.pattern_subj, RegexOptions.Singleline); //находим на странице совпадения по паттерну названия предмета
                     int mtch_cnt = matches_time.Count;
                     Console.WriteLine(actl_grp);
-                    
+
                     for (int i = 0; i < mtch_cnt; i++) //цикл, в котором записываем данные о времени
                     {
                         var pos = new SchedulePos(); //экземпляр класса, в который кидаем данные о парах текущей группы 
