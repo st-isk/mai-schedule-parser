@@ -2,7 +2,7 @@
 
 <h2 align="center">
 
-[<img src="https://img.shields.io/badge/-ASP.NET-purple?style=for-the-badge">](https://dotnet.microsoft.com/en-us/apps/aspnet)
+[<img src="https://img.shields.io/badge/-.NET%20Core-purple?style=for-the-badge">](https://dotnet.microsoft.com/en-us/)
 [<img src="https://img.shields.io/badge/LiteDB-5.0.11%2B-lightgrey?style=for-the-badge">](https://www.litedb.org/)
 
 </h2>
